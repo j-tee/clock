@@ -6,11 +6,12 @@ import Display from './Display';
 import AlarmSound from "./assets/AlarmSound.mp3"
 
 function App() {
-  const defaultBreakTime = 5 * 60;
+  const defaultBreakTime =  5 * 60;
   const defaultSessionTime = 25 * 60;
-  const min = 60;
-  const max = 60;
-  const interval = 60;
+  const min = 1 * 60; // 1 minute minimum
+  const max = 60 * 60; // 60 minutes maximum
+  const interval = 60; // 1 minute intervals
+  // const audioRef = useRef<HTMLAudioElement>(null);
 
   const [breakTime, setBreakTime] = useState(defaultBreakTime);
   const [sessionTime, setSessionTime] = useState(defaultSessionTime);
@@ -32,37 +33,58 @@ function App() {
     }
   }, [displayState.timerRunning])
 
+  // useEffect(() => {
+  //   if (displayState.time === 0 && audioRef.current) {
+  //     audioRef.current.currentTime = 2;
+  //     audioRef.current.play().catch((error) => console.log(error));
+  //     setDisplayState((prev) => ({
+  //       ...prev,
+  //       timeType: prev.timeType === "Session" ? "Break" : "Session",
+  //       time: prev.timeType === "Session" ? breakTime : sessionTime
+  //     }));
+  //   }
+  // }, [displayState.time]);
+
   useEffect(() => {
     if (displayState.time === 0) {
-      const audio = document.getElementById("beep") as HTMLAudioElement
-      audio.currentTime = 2;
-      audio.play().catch((error) => console.log(error));
-      setDisplayState((prev) => ({
-        ...prev,
-        timeType: prev.timeType === "Session" ? "Break" : "Session",
-        time: prev.timeType === "Session" ? breakTime : sessionTime
-      }))
+        const audio = document.getElementById("beep") as HTMLAudioElement;
+        audio.currentTime = 0;
+        audio.play().catch((error) => console.log(error));
+
+        // Reset timer to the next period
+        setTimeout(() => {
+            setDisplayState((prev) => ({
+                ...prev,
+                timeType: prev.timeType === "Session" ? "Break" : "Session",
+                time: prev.timeType === "Session" ? breakTime : sessionTime
+            }));
+        }, 1000);
     }
-  }, [displayState,breakTime, sessionTime]);
+}, [displayState.time, breakTime, sessionTime]);
 
-  const reset = () => {
-    setBreakTime(defaultBreakTime);
-    setSessionTime(defaultSessionTime);
-    setDisplayState({
-      time: defaultSessionTime,
-      timeType: "Session",
-      timerRunning: false,
-    });
+const reset = () => {
+  // Reset the break and session times to their default values
+  setBreakTime(defaultBreakTime);
+  setSessionTime(defaultSessionTime);
 
-    const audio = document.getElementById("beep") as HTMLAudioElement;
-    audio.pause();
-    audio.currentTime = 0;
-  }
+  // Reset the display state
+  setDisplayState({
+      time: defaultSessionTime, // Reset to 25:00
+      timeType: "Session", // Reset to Session type
+      timerRunning: false, // Stop the timer
+  });
+
+  // Stop and reset the alarm sound
+  const audio = document.getElementById("beep") as HTMLAudioElement;
+  audio.pause();
+  audio.currentTime = 0;
+}
+
 
   const decrementDisplay = () => {
     setDisplayState((prev) => ({
       ...prev,
-      time: prev.time - 1
+      time: Math.max(prev.time - 1, 0) 
     }))
   }
 
@@ -73,11 +95,13 @@ function App() {
     }))
   }
   const changeBreakTime = (time: number) => {
+    // console.log(">>>>time", time)
     if (displayState.timerRunning) return;
     setBreakTime(time)
   }
 
   const changeSessionTime = (time: number) => {
+    console.log(">>>>time", time)
     if (displayState.timerRunning) return;
     setSessionTime(time)
     setDisplayState({
